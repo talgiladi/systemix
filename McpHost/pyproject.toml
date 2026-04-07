@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "systemix-mcp-host"
+version = "0.1.0"
+description = "Production-ready skeleton for a Python MCP host with a REST API facade."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Systemix" }
+]
+dependencies = [
+  "fastapi>=0.115.12,<1.0.0",
+  "httpx>=0.28.1,<1.0.0",
+  "mcp[cli]>=1.27.0,<2.0.0",
+  "orjson>=3.10.18,<4.0.0",
+  "pydantic>=2.11.3,<3.0.0",
+  "uvicorn>=0.34.1,<1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.5,<9.0.0",
+]
+
+[project.scripts]
+systemix-mcp-host = "mcp_host.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_host"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

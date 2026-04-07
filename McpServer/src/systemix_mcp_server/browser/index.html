@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Systemix MCP Browser Test</title>
+    <style>
+      :root {
+        --bg: #f7f2e8;
+        --panel: rgba(255, 251, 245, 0.86);
+        --ink: #1d2c2f;
+        --muted: #58666a;
+        --accent: #b64926;
+        --accent-soft: #e8b587;
+        --line: rgba(29, 44, 47, 0.12);
+        --shadow: 0 18px 60px rgba(71, 48, 25, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(182, 73, 38, 0.18), transparent 28%),
+          radial-gradient(circle at bottom right, rgba(59, 110, 98, 0.18), transparent 24%),
+          linear-gradient(135deg, #f5efe3 0%, #f7f2e8 35%, #efe3d2 100%);
+      }
+
+      .shell {
+        width: min(1100px, calc(100vw - 32px));
+        margin: 32px auto;
+        display: grid;
+        gap: 20px;
+      }
+
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px;
+      }
+
+      .hero h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 1.02rem;
+      }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .panel {
+        padding: 20px;
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 1.2rem;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 12px;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        width: 100%;
+        margin-top: 6px;
+        border-radius: 14px;
+        border: 1px solid rgba(29, 44, 47, 0.16);
+        padding: 12px 14px;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      button {
+        cursor: pointer;
+        color: #fffaf3;
+        background: linear-gradient(135deg, #b64926 0%, #8f2f17 100%);
+        border: none;
+        font-weight: 700;
+        transition: transform 140ms ease, box-shadow 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 26px rgba(182, 73, 38, 0.22);
+      }
+
+      .row {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      }
+
+      .status {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(182, 73, 38, 0.12);
+        color: #7b2d16;
+        font-size: 0.85rem;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        padding: 18px;
+        border-radius: 18px;
+        background: #1a2325;
+        color: #f4e5cf;
+        min-height: 260px;
+        overflow: auto;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .actions button {
+        width: auto;
+        min-width: 180px;
+      }
+
+      @media (max-width: 640px) {
+        .shell {
+          width: min(100vw, calc(100vw - 18px));
+          margin: 12px auto 24px;
+        }
+
+        .hero,
+        .panel {
+          border-radius: 18px;
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <h1>Systemix MCP Browser Test</h1>
+        <p>
+          This page talks directly to the real MCP endpoint at <code>/mcp/</code>.
+          Use it to initialize a session, inspect available capabilities, and verify
+          that every tool, prompt, and resource works with a required
+          <code>user_id</code>.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Session</h2>
+        <div class="status">
+          <span class="pill" id="session-pill">Session: not initialized</span>
+          <span class="pill" id="request-pill">Request id: none</span>
+        </div>
+        <div class="row" style="margin-top: 14px">
+          <label>
+            Protocol version
+            <input id="protocol-version" value="2025-03-26" />
+          </label>
+          <label>
+            User ID
+            <input id="shared-user-id" value="user-1001" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="initialize-btn" type="button">Initialize</button>
+          <button id="discover-btn" type="button">List Tools / Prompts / Resources</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <form class="panel" id="account-tool-form">
+          <h2>Tool: get_account_details</h2>
+          <label>
+            User ID
+            <input name="user_id" value="user-1001" />
+          </label>
+          <button type="submit">Call Tool</button>
+        </form>
+
+        <form class="panel" id="support-tool-form">
+          <h2>Tool: get_technical_support</h2>
+          <label>
+            User ID
+            <input name="user_id" value="user-1001" />
+          </label>
+          <div class="row">
+            <label>
+              Issue type
+              <select name="issue_type">
+                <option value="login">login</option>
+                <option value="integration">integration</option>
+                <option value="performance">performance</option>
+                <option value="other">other</option>
+              </select>
+            </label>
+            <label>
+              Severity
+              <select name="severity">
+                <option value="low">low</option>
+                <option value="medium" selected>medium</option>
+                <option value="high">high</option>
+                <option value="critical">critical</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Summary
+            <textarea name="summary">User reports repeated login failures after SSO redirect.</textarea>
+          </label>
+          <button type="submit">Call Tool</button>
+        </form>
+
+        <form class="panel" id="prompt-form">
+          <h2>Prompt: technical_support_prompt</h2>
+          <label>
+            User ID
+            <input name="user_id" value="user-1001" />
+          </label>
+          <div class="row">
+            <label>
+              Preferred tone
+              <select name="preferred_tone">
+                <option value="concise" selected>concise</option>
+                <option value="friendly">friendly</option>
+                <option value="formal">formal</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Issue summary
+            <textarea name="issue_summary">Summarize what an L1 support engineer should do next.</textarea>
+          </label>
+          <button type="submit">Get Prompt</button>
+        </form>
+
+        <form class="panel" id="resource-form">
+          <h2>Resource: account://{user_id}/profile</h2>
+          <label>
+            User ID
+            <input name="user_id" value="user-1001" />
+          </label>
+          <button type="submit">Read Resource</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Output</h2>
+        <pre id="output">Ready.</pre>
+      </section>
+    </main>
+
+    <script>
+      const output = document.getElementById("output");
+      const sessionPill = document.getElementById("session-pill");
+      const requestPill = document.getElementById("request-pill");
+      const sharedUserId = document.getElementById("shared-user-id");
+      const protocolVersionInput = document.getElementById("protocol-version");
+
+      let sessionId = null;
+      let nextId = 1;
+
+      const setOutput = (label, value) => {
+        output.textContent = `${label}\n\n${JSON.stringify(value, null, 2)}`;
+      };
+
+      const syncUserIds = () => {
+        document.querySelectorAll('input[name="user_id"]').forEach((input) => {
+          input.value = sharedUserId.value;
+        });
+      };
+
+      sharedUserId.addEventListener("input", syncUserIds);
+
+      const rpc = async (method, params = undefined, isNotification = false) => {
+        const body = isNotification
+          ? { jsonrpc: "2.0", method, params }
+          : { jsonrpc: "2.0", id: nextId++, method, params };
+
+        const headers = {
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/event-stream"
+        };
+        if (sessionId) {
+          headers["Mcp-Session-Id"] = sessionId;
+        }
+
+        const response = await fetch("/mcp/", {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        const newSessionId = response.headers.get("Mcp-Session-Id");
+        const requestId = response.headers.get("x-request-id");
+        if (newSessionId) {
+          sessionId = newSessionId;
+        }
+        sessionPill.textContent = `Session: ${sessionId ?? "stateless"}`;
+        requestPill.textContent = `Request id: ${requestId ?? "none"}`;
+
+        const payload = response.status === 204 ? null : await response.json();
+        if (!response.ok) {
+          throw new Error(JSON.stringify(payload, null, 2));
+        }
+        return payload;
+      };
+
+      document.getElementById("initialize-btn").addEventListener("click", async () => {
+        try {
+          const initializeResult = await rpc("initialize", {
+            protocolVersion: protocolVersionInput.value.trim(),
+            capabilities: {},
+            clientInfo: {
+              name: "systemix-browser-test",
+              version: "0.1.0"
+            }
+          });
+          await rpc("notifications/initialized", {}, true);
+          setOutput("Initialize result", initializeResult);
+        } catch (error) {
+          setOutput("Initialize failed", { error: String(error) });
+        }
+      });
+
+      document.getElementById("discover-btn").addEventListener("click", async () => {
+        try {
+          const [tools, prompts, resources] = await Promise.all([
+            rpc("tools/list", {}),
+            rpc("prompts/list", {}),
+            rpc("resources/list", {})
+          ]);
+          setOutput("Discovery", { tools, prompts, resources });
+        } catch (error) {
+          setOutput("Discovery failed", { error: String(error) });
+        }
+      });
+
+      document.getElementById("account-tool-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          const result = await rpc("tools/call", {
+            name: "get_account_details",
+            arguments: {
+              user_id: form.get("user_id")
+            }
+          });
+          setOutput("get_account_details", result);
+        } catch (error) {
+          setOutput("Tool failed", { error: String(error) });
+        }
+      });
+
+      document.getElementById("support-tool-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          const result = await rpc("tools/call", {
+            name: "get_technical_support",
+            arguments: {
+              user_id: form.get("user_id"),
+              issue_type: form.get("issue_type"),
+              summary: form.get("summary"),
+              severity: form.get("severity")
+            }
+          });
+          setOutput("get_technical_support", result);
+        } catch (error) {
+          setOutput("Tool failed", { error: String(error) });
+        }
+      });
+
+      document.getElementById("prompt-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          const result = await rpc("prompts/get", {
+            name: "technical_support_prompt",
+            arguments: {
+              user_id: form.get("user_id"),
+              issue_summary: form.get("issue_summary"),
+              preferred_tone: form.get("preferred_tone")
+            }
+          });
+          setOutput("technical_support_prompt", result);
+        } catch (error) {
+          setOutput("Prompt failed", { error: String(error) });
+        }
+      });
+
+      document.getElementById("resource-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        try {
+          const result = await rpc("resources/read", {
+            uri: `account://${form.get("user_id")}/profile`
+          });
+          setOutput("account resource", result);
+        } catch (error) {
+          setOutput("Resource failed", { error: String(error) });
+        }
+      });
+
+      syncUserIds();
+    </script>
+  </body>
+</html>

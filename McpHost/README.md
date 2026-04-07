@@ -22,7 +22,7 @@ This project intentionally follows a host-orchestrator shape:
 
 ```text
 .
-├── openai_config.json
+├── config.example.json
 ├── pyproject.toml
 ├── requirements.txt
 ├── README.md
@@ -41,7 +41,17 @@ This project intentionally follows a host-orchestrator shape:
 
 ## Configuration
 
-All runtime configuration lives in `openai_config.json`.
+All runtime configuration lives in `config.json`.
+
+`config.json` is intentionally gitignored because it may contain secrets such as provider API keys. The committed reference file is `config.example.json`, which documents the required structure with safe placeholder values.
+
+Create your local runtime config by copying the example:
+
+```bash
+cp config.example.json config.json
+```
+
+If you add, remove, or rename any configuration field, update `config.example.json` in the same change. This is a required maintenance step for both human contributors and LLM code agents so the documented structure stays aligned with the real runtime config schema.
 
 ### Main sections
 
@@ -289,4 +299,4 @@ python3 -m pytest
 - This host uses the official Python MCP library for remote discovery and tool execution.
 - It does not keep long-lived MCP sessions.
 - It expects the configured provider API key and model to be valid.
-- The current `openai_config.json` should not contain real production secrets in source control. Move live keys to secret storage before deployment.
+- The current `config.json` should not contain real production secrets in source control. Move live keys to secret storage before deployment.

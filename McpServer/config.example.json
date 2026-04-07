@@ -1,0 +1,88 @@
+{
+  "app": {
+    "name": "Systemix MCP Server",
+    "environment": "development",
+    "version": "0.1.0"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8001,
+    "cors_origins": ["*"]
+  },
+  "logging": {
+    "level": "DEBUG",
+    "format": "text",
+    "access_log": true,
+    "log_request_bodies": true
+  },
+  "accounts": {
+    "default_tier": "standard",
+    "records": [
+      {
+        "user_id": "user-1001",
+        "account_id": "ACC-1001",
+        "full_name": "Dana Levi",
+        "email": "dana.levi@example.com",
+        "plan": "enterprise",
+        "status": "active",
+        "region": "eu-west-1",
+        "created_at": "2024-02-15T10:30:00Z",
+        "last_login_at": "2026-04-06T17:25:00Z",
+        "open_tickets": 1,
+        "notes": [
+          "Primary billing owner",
+          "Uses SSO"
+        ]
+      },
+      {
+        "user_id": "user-2002",
+        "account_id": "ACC-2002",
+        "full_name": "Amir Cohen",
+        "email": "amir.cohen@example.com",
+        "plan": "standard",
+        "status": "trial",
+        "region": "us-east-1",
+        "created_at": "2026-03-10T08:00:00Z",
+        "last_login_at": "2026-04-07T08:45:00Z",
+        "open_tickets": 0,
+        "notes": [
+          "Evaluating API rollout"
+        ]
+      }
+    ]
+  },
+  "support": {
+    "team_name": "Systemix Technical Support",
+    "default_queue": "general-support",
+    "default_response_sla_hours": 8,
+    "issue_routes": {
+      "login": {
+        "queue": "identity-support",
+        "response_sla_hours": 2,
+        "recommended_steps": [
+          "Confirm the user is assigned to the correct identity provider.",
+          "Check whether SSO metadata changed in the last 24 hours.",
+          "Retry the login flow with a fresh browser session."
+        ]
+      },
+      "integration": {
+        "queue": "integration-support",
+        "response_sla_hours": 4,
+        "recommended_steps": [
+          "Validate endpoint credentials and token expiry.",
+          "Confirm the remote API IP allowlist includes the integration worker.",
+          "Review the latest failed webhook payload."
+        ]
+      },
+      "performance": {
+        "queue": "platform-operations",
+        "response_sla_hours": 1,
+        "recommended_steps": [
+          "Capture the affected time window and region.",
+          "Check whether recent deploys overlap the incident window.",
+          "Compare user-reported latency with current health metrics."
+        ]
+      }
+    }
+  }
+}

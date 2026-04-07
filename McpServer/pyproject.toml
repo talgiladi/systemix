@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "systemix-mcp-server"
+version = "0.1.0"
+description = "Systemix sample MCP server with tools, prompts, resources, browser testing, and structured logging."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Systemix" }
+]
+dependencies = [
+  "fastapi>=0.115.12,<1.0.0",
+  "mcp[cli]>=1.27.0,<2.0.0",
+  "pydantic>=2.11.3,<3.0.0",
+  "uvicorn>=0.34.1,<1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28.1,<1.0.0",
+  "pytest>=8.3.5,<9.0.0",
+]
+
+[project.scripts]
+systemix-mcp-server = "systemix_mcp_server.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/systemix_mcp_server"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

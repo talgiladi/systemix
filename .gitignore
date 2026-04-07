@@ -93,7 +93,9 @@ cython_debug/
 # PyCharm
 idea/
 openai_config.json
-
+McpHost/config.json
+McpServer/config.json
+*/config.json
 .codex
 .codex/
 */__pycache__

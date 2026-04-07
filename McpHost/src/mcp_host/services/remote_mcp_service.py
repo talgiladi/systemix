@@ -4,6 +4,7 @@ import json
 import logging
 from time import perf_counter
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from mcp import ClientSession
@@ -90,7 +91,7 @@ class RemoteMcpService:
         started = perf_counter()
         try:
             async with httpx.AsyncClient(
-                headers=server_config.headers,
+                headers=self._build_client_headers(server_config),
                 timeout=server_config.request_timeout_seconds,
             ) as http_client:
                 async with streamable_http_client(tool.server_url, http_client=http_client) as (
@@ -159,7 +160,7 @@ class RemoteMcpService:
 
     async def _discover_server_tools(self, server: McpServerSettings) -> list[DiscoveredTool]:
         async with httpx.AsyncClient(
-            headers=server.headers,
+            headers=self._build_client_headers(server),
             timeout=server.request_timeout_seconds,
         ) as http_client:
             async with streamable_http_client(server.url, http_client=http_client) as (
@@ -197,6 +198,17 @@ class RemoteMcpService:
             if server.name == server_name:
                 return server
         raise LookupError(f"Configured MCP server '{server_name}' was not found")
+
+    def _build_client_headers(self, server: McpServerSettings) -> dict[str, str]:
+        headers = dict(server.headers)
+        if any(key.lower() == "host" for key in headers):
+            return headers
+
+        parsed = urlparse(server.url)
+        if parsed.hostname == "host.docker.internal":
+            port = parsed.port
+            headers["Host"] = f"localhost:{port}" if port is not None else "localhost"
+        return headers
 
     def _serialize_tool_result(self, result: CallToolResult) -> dict[str, Any]:
         contents: list[dict[str, Any]] = []

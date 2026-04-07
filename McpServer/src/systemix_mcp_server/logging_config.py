@@ -37,6 +37,8 @@ def configure_logging(settings: LoggingSettings) -> None:
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
 
+    resolved_level = getattr(logging, settings.level.upper(), logging.INFO)
+
     handler = logging.StreamHandler()
     if settings.format.lower() == "json":
         handler.setFormatter(JsonLogFormatter())
@@ -49,4 +51,21 @@ def configure_logging(settings: LoggingSettings) -> None:
         )
 
     root_logger.addHandler(handler)
-    root_logger.setLevel(getattr(logging, settings.level.upper(), logging.INFO))
+    root_logger.setLevel(resolved_level)
+
+    # Route framework and server logs through the same handler so DEBUG-level
+    # MCP activity shows up consistently next to application logs.
+    for logger_name in (
+        "systemix_mcp_server",
+        "mcp",
+        "mcp.server",
+        "mcp.server.fastmcp",
+        "mcp.server.lowlevel.server",
+        "uvicorn",
+        "uvicorn.error",
+        "uvicorn.access",
+    ):
+        named_logger = logging.getLogger(logger_name)
+        named_logger.handlers.clear()
+        named_logger.setLevel(resolved_level)
+        named_logger.propagate = True

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mcp_host.config import load_settings, resolve_config_path
+from mcp_host.config import CONFIG_PATH_ENV_VAR, load_settings, resolve_config_path
 
 
 def test_load_settings_supports_extended_config(tmp_path: Path) -> None:
@@ -75,6 +75,16 @@ def test_resolve_config_path_falls_back_to_legacy_name(tmp_path: Path, monkeypat
     config_path = tmp_path / "openai_config.json"
     config_path.write_text("{}", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
+
+    resolved = resolve_config_path()
+
+    assert resolved == config_path
+
+
+def test_resolve_config_path_uses_env_var_when_set(tmp_path: Path, monkeypatch) -> None:
+    config_path = tmp_path / "docker-config.json"
+    config_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv(CONFIG_PATH_ENV_VAR, str(config_path))
 
     resolved = resolve_config_path()
 

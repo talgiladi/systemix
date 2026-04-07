@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from systemix_mcp_server.models import AccountRecord, SupportSettingsModel
 
 
 DEFAULT_CONFIG_PATH = Path("config.json")
+CONFIG_PATH_ENV_VAR = "SYSTEMIX_MCP_SERVER_CONFIG_PATH"
 
 
 class AppSettings(BaseModel):
@@ -57,6 +59,10 @@ class Settings(BaseModel):
 def resolve_config_path(config_path: str | Path | None = None) -> Path:
     if config_path is not None:
         return Path(config_path)
+
+    env_config_path = os.getenv(CONFIG_PATH_ENV_VAR)
+    if env_config_path:
+        return Path(env_config_path)
 
     repo_root_config = Path(__file__).resolve().parents[2] / DEFAULT_CONFIG_PATH.name
     candidates = [

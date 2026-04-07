@@ -58,3 +58,5 @@ class LlmRunResult(BaseModel):
     final_text: str
     rounds: int
     provider_usage: dict[str, Any] = Field(default_factory=dict)
+    requested_tool_count: int = 0
+    executed_tool_results: list[ToolExecutionResult] = Field(default_factory=list)

@@ -70,6 +70,8 @@ class LlmService:
         provider_settings = self._require_provider("openai")
         client = self._clients["openai"]
         tools = [convert_tool_to_llm_format(tool, "openai") for tool in discovered_tools]
+        executed_tools: list[ToolExecutionResult] = []
+        requested_tool_count = 0
 
         response = await self._post_json(
             client,
@@ -91,9 +93,13 @@ class LlmService:
                     final_text=self._extract_openai_text(response),
                     rounds=round_index,
                     provider_usage=response.get("usage", {}),
+                    requested_tool_count=requested_tool_count,
+                    executed_tool_results=executed_tools,
                 )
 
+            requested_tool_count += len(tool_calls)
             executed = await asyncio.gather(*(tool_executor(call) for call in tool_calls))
+            executed_tools.extend(executed)
             response = await self._post_json(
                 client,
                 "/responses",
@@ -128,6 +134,8 @@ class LlmService:
         provider_settings = self._require_provider("groq")
         client = self._clients["groq"]
         tools = [convert_tool_to_llm_format(tool, "groq") for tool in discovered_tools]
+        executed_tools: list[ToolExecutionResult] = []
+        requested_tool_count = 0
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_query},
@@ -148,31 +156,21 @@ class LlmService:
             )
             choice = response["choices"][0]
             message = choice["message"]
-            tool_calls = message.get("tool_calls") or []
+            tool_calls = self._extract_chat_tool_calls(message)
             if not tool_calls:
                 return LlmRunResult(
-                    final_text=message.get("content") or "",
+                    final_text=self._extract_chat_text(message),
                     rounds=round_index,
                     provider_usage=response.get("usage", {}),
+                    requested_tool_count=requested_tool_count,
+                    executed_tool_results=executed_tools,
                 )
 
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": message.get("content"),
-                    "tool_calls": tool_calls,
-                }
-            )
-            executed = await asyncio.gather(*(
-                tool_executor(
-                    ToolCallRequest(
-                        call_id=tool_call["id"],
-                        tool_name=tool_call["function"]["name"],
-                        arguments=json.loads(tool_call["function"]["arguments"] or "{}"),
-                    )
-                )
-                for tool_call in tool_calls
-            ))
+            requested_tool_count += len(tool_calls)
+            assistant_message = self._build_assistant_chat_message(message)
+            messages.append(assistant_message)
+            executed = await asyncio.gather(*(tool_executor(call) for call in tool_calls))
+            executed_tools.extend(executed)
             for execution in executed:
                 messages.append(
                     {
@@ -196,6 +194,8 @@ class LlmService:
         provider_settings = self._require_provider("gemini")
         client = self._clients["gemini"]
         declarations = [convert_tool_to_llm_format(tool, "gemini") for tool in discovered_tools]
+        executed_tools: list[ToolExecutionResult] = []
+        requested_tool_count = 0
         contents: list[dict[str, Any]] = [{"role": "user", "parts": [{"text": user_query}]}]
 
         for round_index in range(1, self._settings.llm.max_tool_rounds + 1):
@@ -221,10 +221,14 @@ class LlmService:
                     final_text=self._extract_gemini_text(model_content),
                     rounds=round_index,
                     provider_usage=response.get("usageMetadata", {}),
+                    requested_tool_count=requested_tool_count,
+                    executed_tool_results=executed_tools,
                 )
 
             contents.append(model_content)
+            requested_tool_count += len(tool_calls)
             executed = await asyncio.gather(*(tool_executor(call) for call in tool_calls))
+            executed_tools.extend(executed)
             for execution in executed:
                 contents.append(
                     {
@@ -271,9 +275,9 @@ class LlmService:
                 continue
             calls.append(
                 ToolCallRequest(
-                    call_id=item["call_id"],
+                    call_id=item.get("call_id") or item.get("id") or item["name"],
                     tool_name=item["name"],
-                    arguments=json.loads(item.get("arguments") or "{}"),
+                    arguments=self._coerce_arguments(item.get("arguments")),
                 )
             )
         return calls
@@ -287,9 +291,104 @@ class LlmService:
             if item.get("type") != "message":
                 continue
             for content in item.get("content", []):
+                if not isinstance(content, dict):
+                    continue
                 text = content.get("text")
                 if text:
                     parts.append(text)
+        return "\n".join(parts).strip()
+
+    def _extract_chat_tool_calls(self, message: dict[str, Any]) -> list[ToolCallRequest]:
+        calls: list[ToolCallRequest] = []
+        raw_tool_calls = message.get("tool_calls")
+        if isinstance(raw_tool_calls, list):
+            for tool_call in raw_tool_calls:
+                parsed = self._parse_chat_tool_call(tool_call)
+                if parsed is not None:
+                    calls.append(parsed)
+
+        if calls:
+            return calls
+
+        raw_function_call = message.get("function_call")
+        if isinstance(raw_function_call, dict):
+            parsed = self._parse_function_call_payload(raw_function_call)
+            if parsed is not None:
+                return [parsed]
+
+        content = message.get("content")
+        if isinstance(content, list):
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                if isinstance(part.get("tool_calls"), list):
+                    for tool_call in part["tool_calls"]:
+                        parsed = self._parse_chat_tool_call(tool_call)
+                        if parsed is not None:
+                            calls.append(parsed)
+                    continue
+
+                function_call = part.get("function_call") or part.get("functionCall")
+                if isinstance(function_call, dict):
+                    parsed = self._parse_function_call_payload(function_call)
+                    if parsed is not None:
+                        calls.append(parsed)
+
+        return calls
+
+    def _parse_chat_tool_call(self, tool_call: Any) -> ToolCallRequest | None:
+        if not isinstance(tool_call, dict):
+            return None
+        function_payload = tool_call.get("function")
+        if not isinstance(function_payload, dict):
+            return None
+        tool_name = function_payload.get("name")
+        if not tool_name:
+            return None
+        return ToolCallRequest(
+            call_id=tool_call.get("id") or tool_call.get("call_id") or tool_name,
+            tool_name=tool_name,
+            arguments=self._coerce_arguments(function_payload.get("arguments")),
+        )
+
+    def _parse_function_call_payload(self, function_call: Any) -> ToolCallRequest | None:
+        if not isinstance(function_call, dict):
+            return None
+        tool_name = function_call.get("name")
+        if not tool_name:
+            return None
+        return ToolCallRequest(
+            call_id=function_call.get("id") or function_call.get("call_id") or tool_name,
+            tool_name=tool_name,
+            arguments=self._coerce_arguments(
+                function_call.get("arguments") or function_call.get("args")
+            ),
+        )
+
+    def _build_assistant_chat_message(self, message: dict[str, Any]) -> dict[str, Any]:
+        assistant_message: dict[str, Any] = {"role": "assistant"}
+        if "content" in message:
+            assistant_message["content"] = message.get("content")
+        if isinstance(message.get("tool_calls"), list):
+            assistant_message["tool_calls"] = message["tool_calls"]
+        elif isinstance(message.get("function_call"), dict):
+            assistant_message["function_call"] = message["function_call"]
+        return assistant_message
+
+    def _extract_chat_text(self, message: dict[str, Any]) -> str:
+        content = message.get("content")
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            return ""
+
+        parts: list[str] = []
+        for part in content:
+            if not isinstance(part, dict):
+                continue
+            text = part.get("text")
+            if isinstance(text, str) and text:
+                parts.append(text)
         return "\n".join(parts).strip()
 
     def _extract_gemini_tool_calls(self, model_content: dict[str, Any]) -> list[ToolCallRequest]:
@@ -317,3 +416,15 @@ class LlmService:
 
     def _compact_dict(self, payload: dict[str, Any]) -> dict[str, Any]:
         return {key: value for key, value in payload.items() if value is not None}
+
+    def _coerce_arguments(self, raw_arguments: Any) -> dict[str, Any]:
+        if raw_arguments is None:
+            return {}
+        if isinstance(raw_arguments, dict):
+            return raw_arguments
+        if isinstance(raw_arguments, str):
+            raw_arguments = raw_arguments.strip()
+            if not raw_arguments:
+                return {}
+            return json.loads(raw_arguments)
+        raise TypeError(f"Unsupported tool argument payload type: {type(raw_arguments).__name__}")

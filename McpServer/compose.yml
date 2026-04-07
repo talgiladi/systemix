@@ -1,0 +1,22 @@
+services:
+  systemix-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: systemix-mcp-server:local
+    container_name: systemix-mcp-server
+    environment:
+      SYSTEMIX_MCP_SERVER_CONFIG_PATH: /app/config.json
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./config.json:/app/config.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

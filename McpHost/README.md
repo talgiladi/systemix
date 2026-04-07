@@ -274,6 +274,69 @@ python3 src/mcp_host/main.py
 
 Then browse to `http://localhost:8000/` or `http://localhost:8000/docs`.
 
+## Running with Docker
+
+Build the image:
+
+```bash
+docker build -t systemix-mcp-host .
+```
+
+Run the container with your local runtime config mounted read-only:
+
+```bash
+docker run --rm \
+  --name systemix-mcp-host \
+  -p 8000:8000 \
+  -e MCP_HOST_CONFIG_PATH=/app/config.json \
+  -v "$(pwd)/config.json:/app/config.json:ro" \
+  --add-host=host.docker.internal:host-gateway \
+  systemix-mcp-host
+```
+
+Then browse to `http://localhost:8000/` or `http://localhost:8000/docs`.
+
+### Docker Compose
+
+This repo includes `docker-compose.yml`, so the app can be started out of the box with the local `config.json` mounted into the container:
+
+```bash
+docker compose up --build
+```
+
+The compose service:
+
+- publishes container port `8000` to host port `8000`
+- mounts `./config.json` into `/app/config.json` as read-only
+- sets `MCP_HOST_CONFIG_PATH=/app/config.json`
+- adds `host.docker.internal` so the container can call services running on your host machine
+
+Stop it with:
+
+```bash
+docker compose down
+```
+
+### MCP server URLs in containers
+
+If a configured remote MCP server runs on your host machine, do not use `localhost` in `config.json` when the API itself runs inside Docker. Inside the container, `localhost` points back to the container.
+
+Use `host.docker.internal` instead. For example:
+
+```json
+{
+  "mcp_servers": [
+    {
+      "name": "systemix-support",
+      "url": "http://host.docker.internal:8001/mcp/",
+      "description": "Systemix support MCP server with account details, technical support, prompts, and account resources.",
+      "headers": {},
+      "request_timeout_seconds": 30.0
+    }
+  ]
+}
+```
+
 ## Tests
 
 Install test dependencies if needed:

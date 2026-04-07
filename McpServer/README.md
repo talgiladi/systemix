@@ -52,6 +52,8 @@ Create your local runtime config by copying the example:
 cp config.example.json config.json
 ```
 
+When running in Docker, the container can read the mounted config file through `SYSTEMIX_MCP_SERVER_CONFIG_PATH=/app/config.json`.
+
 If you add, remove, or rename any configuration field, update `config.example.json` in the same change. This is a required maintenance step for both human contributors and LLM code agents so the documented structure never drifts from the real config schema.
 
 Main sections:
@@ -86,6 +88,49 @@ systemix-mcp-server
 
 The app starts on `http://localhost:8001` by default.
 
+## Running with Docker
+
+Build the image:
+
+```bash
+docker build -t systemix-mcp-server .
+```
+
+Run the container with your local runtime config mounted read-only:
+
+```bash
+docker run --rm \
+  --name systemix-mcp-server \
+  -p 8001:8001 \
+  -e SYSTEMIX_MCP_SERVER_CONFIG_PATH=/app/config.json \
+  -v "$(pwd)/config.json:/app/config.json:ro" \
+  --add-host=host.docker.internal:host-gateway \
+  systemix-mcp-server
+```
+
+Then open `http://localhost:8001/browser`.
+
+### Docker Compose
+
+This repo includes `compose.yml`, so the server can be started out of the box with the local `config.json` mounted into the container:
+
+```bash
+docker compose up --build
+```
+
+The compose service:
+
+- publishes container port `8001` to host port `8001`
+- mounts `./config.json` into `/app/config.json` as read-only
+- sets `SYSTEMIX_MCP_SERVER_CONFIG_PATH=/app/config.json`
+- adds `host.docker.internal` so the container can reach services running on your host machine if needed
+
+Stop it with:
+
+```bash
+docker compose down
+```
+
 ## Endpoints
 
 - `/health`: lightweight HTTP health check
@@ -108,6 +153,8 @@ The browser page is intended for manual smoke testing without writing code. It l
 4. Use the forms to call tools, fetch the prompt, and read the resource.
 
 This exercises the real MCP endpoint over HTTP from a browser.
+
+If you run the server inside Docker, the browser test page is still available at `http://localhost:8001/browser` on the host because compose publishes port `8001`.
 
 ## Unit Tests
 

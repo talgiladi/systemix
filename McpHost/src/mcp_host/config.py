@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 DEFAULT_CONFIG_PATH = Path("config.json")
 LEGACY_CONFIG_PATH = Path("openai_config.json")
+CONFIG_PATH_ENV_VAR = "MCP_HOST_CONFIG_PATH"
 
 
 class AppSettings(BaseModel):
@@ -89,6 +91,10 @@ class Settings(BaseModel):
 def resolve_config_path(config_path: str | Path | None = None) -> Path:
     if config_path is not None:
         return Path(config_path)
+
+    env_config_path = os.getenv(CONFIG_PATH_ENV_VAR)
+    if env_config_path:
+        return Path(env_config_path)
 
     repo_root = Path(__file__).resolve().parents[2]
     repo_root_config = repo_root / DEFAULT_CONFIG_PATH.name

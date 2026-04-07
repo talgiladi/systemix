@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from systemix_mcp_server.config import load_settings, resolve_config_path
+from systemix_mcp_server.config import (
+    CONFIG_PATH_ENV_VAR,
+    load_settings,
+    resolve_config_path,
+)
 
 
 def test_load_settings_supports_project_config(tmp_path: Path) -> None:
@@ -75,6 +79,19 @@ def test_resolve_config_path_prefers_current_working_directory(
     config_path = tmp_path / "config.json"
     config_path.write_text("{}", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
+
+    resolved = resolve_config_path()
+
+    assert resolved == config_path
+
+
+def test_resolve_config_path_uses_env_var_when_set(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    config_path = tmp_path / "docker-config.json"
+    config_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv(CONFIG_PATH_ENV_VAR, str(config_path))
 
     resolved = resolve_config_path()
 

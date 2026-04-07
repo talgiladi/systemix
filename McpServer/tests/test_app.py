@@ -1,8 +1,12 @@
 import asyncio
+import logging
+import json
 from types import SimpleNamespace
 
 from systemix_mcp_server.app import browser_test_page, create_app, docs_redirect, healthcheck
-from systemix_mcp_server.config import Settings
+from systemix_mcp_server.config import LoggingSettings, Settings
+from systemix_mcp_server.logging_config import configure_logging
+from systemix_mcp_server.middleware import _extract_mcp_log_entry
 
 
 def build_settings() -> Settings:
@@ -74,3 +78,39 @@ def test_app_registers_expected_routes() -> None:
     assert "/" in route_paths
     assert "/health" in route_paths
     assert "/browser" in route_paths
+
+
+def test_extract_mcp_tool_call_log_entry_includes_details() -> None:
+    entry = _extract_mcp_log_entry(
+        json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": "tool-call-1",
+                "method": "tools/call",
+                "params": {
+                    "name": "get_technical_support",
+                    "arguments": {
+                        "user_id": "user-1001",
+                        "issue_type": "login",
+                        "summary": "User reports repeated login failures after SSO redirect.",
+                        "severity": "high",
+                    },
+                },
+            }
+        )
+    )
+
+    assert entry is not None
+    message, fields = entry
+    assert message == "MCP tool call"
+    assert fields["tool_name"] == "get_technical_support"
+    assert fields["tool_arguments"]["user_id"] == "user-1001"
+    assert fields["tool_arguments"]["severity"] == "high"
+
+
+def test_configure_logging_sets_uvicorn_and_mcp_loggers_to_requested_level() -> None:
+    configure_logging(LoggingSettings(level="DEBUG", format="text"))
+
+    assert logging.getLogger("systemix_mcp_server").getEffectiveLevel() == logging.DEBUG
+    assert logging.getLogger("mcp.server.lowlevel.server").getEffectiveLevel() == logging.DEBUG
+    assert logging.getLogger("uvicorn.access").getEffectiveLevel() == logging.DEBUG

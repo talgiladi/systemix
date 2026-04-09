@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-intro section">
+    <div class="section-heading align-left">
+        <p class="eyebrow">FAQ</p>
+        <h1>Answers for teams evaluating applied AI in production</h1>
+        <p class="intro-copy">
+            These are the questions that matter in real deployments: security, integration scope, reliability, and how implementation behaves when conditions change.
+        </p>
+    </div>
+</section>
+
+<section class="section faq-stack">
+    <article class="faq-card">
+        <h2>What is an AI agent?</h2>
+        <p>An AI agent is a software component that can interpret inputs, make bounded decisions, and take defined actions across your systems. In practice, it behaves like a governed workflow operator, not an unbounded autonomous actor.</p>
+    </article>
+    <article class="faq-card">
+        <h2>Is this secure?</h2>
+        <p>Security is built into system design, not added later. Access is scoped to the minimum required level, sensitive actions can require explicit approval, and integrations are designed to preserve auditability and control.</p>
+    </article>
+    <article class="faq-card">
+        <h2>Can it integrate with our systems?</h2>
+        <p>Yes. Most deployments connect to common business platforms such as CRMs, email systems, document repositories, ticketing tools, and internal databases. We design around your actual stack instead of forcing a generic workflow.</p>
+    </article>
+    <article class="faq-card">
+        <h2>What happens if the system fails?</h2>
+        <p>Reliable systems include fallback behavior. We define exception handling, human escalation, retry logic, and visibility into failure states so the business process remains understandable and recoverable.</p>
+    </article>
+    <article class="faq-card">
+        <h2>How long does implementation take?</h2>
+        <p>Timeline depends on process complexity and integration depth, but focused use cases often move from discovery to first production-ready workflow in a matter of weeks, not quarters. The priority is safe rollout, not rushed scope.</p>
+    </article>
+</section>
+{% endblock %}

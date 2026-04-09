@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from systemix_mcp_server.config import Settings, load_settings
+from systemix_mcp_server.database import PostgresKnowledgeBaseBootstrapper
 from systemix_mcp_server.logging_config import configure_logging
 from systemix_mcp_server.mcp_server import build_mcp_server
 from systemix_mcp_server.middleware import RequestContextMiddleware
@@ -43,6 +44,7 @@ def create_app(
     configure_logging(resolved_settings.logging)
 
     service = SystemixMcpService(resolved_settings)
+    kb_bootstrapper = PostgresKnowledgeBaseBootstrapper(resolved_settings.database)
     mcp_server = (
         build_mcp_server(resolved_settings, service)
         if include_mcp_server
@@ -60,6 +62,17 @@ def create_app(
                     "known_user_ids": service.known_user_ids(),
                     "issue_types": list(service.issue_types()),
                 },
+            },
+        )
+        kb_summary = kb_bootstrapper.initialize()
+        logger.info(
+            "Knowledge base ready",
+            extra={
+                "extra_fields": {
+                    "created_database": kb_summary.created_database,
+                    "seed_document_count": kb_summary.total_documents,
+                    "seed_directory": str(kb_summary.seed_directory),
+                }
             },
         )
         if mcp_server is None:

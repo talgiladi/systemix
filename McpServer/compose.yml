@@ -1,4 +1,22 @@
 services:
+  systemix-postgres:
+    image: postgres:16-alpine
+    container_name: systemix-postgres
+    environment:
+      POSTGRES_USER: systemix
+      POSTGRES_PASSWORD: systemix
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U systemix -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   systemix-mcp-server:
     build:
       context: .
@@ -7,10 +25,14 @@ services:
     container_name: systemix-mcp-server
     environment:
       SYSTEMIX_MCP_SERVER_CONFIG_PATH: /app/config.json
+    depends_on:
+      systemix-postgres:
+        condition: service_healthy
     ports:
       - "8001:8001"
     volumes:
       - ./config.json:/app/config.json:ro
+      - ./kb:/app/kb:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     init: true
@@ -20,3 +42,6 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+
+volumes:
+  postgres_data:

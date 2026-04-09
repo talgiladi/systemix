@@ -15,6 +15,12 @@
     "access_log": true,
     "log_request_bodies": true
   },
+  "database": {
+    "connection_string": "postgresql://systemix:systemix@systemix-postgres:5432/systemix_kb",
+    "admin_database": "postgres",
+    "kb_directory": "kb",
+    "seed_on_startup": true
+  },
   "accounts": {
     "default_tier": "standard",
     "records": [

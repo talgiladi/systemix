@@ -11,6 +11,7 @@ RUN addgroup --system app && adduser --system --ingroup app app
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY kb ./kb
 
 RUN pip install .
 

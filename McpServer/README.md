@@ -12,14 +12,25 @@
 
 Every callable surface requires `user_id`, either as a tool argument, a prompt argument, or as part of the resource URI.
 
+On startup, the app also bootstraps a PostgreSQL knowledge-base database from the seed files stored in `kb/`.
+
 ## Project Layout
 
 ```text
 .
 ├── config.example.json
+├── kb/
+│   ├── account_and_login.txt
+│   ├── bad_docs.txt
+│   ├── payments.txt
+│   ├── product_usage.txt
+│   ├── returns_and_refunds.txt
+│   └── shipping_and_orders.txt
 ├── pyproject.toml
 ├── requirements.txt
 ├── README.md
+├── scripts/
+│   └── generate_kb_demo_data.py
 ├── src/
 │   └── systemix_mcp_server/
 │       ├── browser/
@@ -27,6 +38,8 @@ Every callable surface requires `user_id`, either as a tool argument, a prompt a
 │       ├── __init__.py
 │       ├── app.py
 │       ├── config.py
+│       ├── database.py
+│       ├── kb_loader.py
 │       ├── logging_config.py
 │       ├── main.py
 │       ├── mcp_server.py
@@ -61,6 +74,7 @@ Main sections:
 - `app`: service identity
 - `server`: bind host, port, and browser CORS settings
 - `logging`: level, formatter, access logs, and request body logging
+- `database`: PostgreSQL connection, admin database used for auto-creation, and the KB seed directory
 - `accounts`: sample account data returned by the server
 - `support`: support routing and troubleshooting defaults
 
@@ -112,7 +126,7 @@ Then open `http://localhost:8001/browser`.
 
 ### Docker Compose
 
-This repo includes `compose.yml`, so the server can be started out of the box with the local `config.json` mounted into the container:
+This repo includes `compose.yml`, so the server and PostgreSQL can be started together with the local `config.json` mounted into the container:
 
 ```bash
 docker compose up --build
@@ -120,8 +134,11 @@ docker compose up --build
 
 The compose service:
 
+- starts a `postgres:16-alpine` container for the KB database
 - publishes container port `8001` to host port `8001`
+- publishes PostgreSQL port `5432` to host port `5432`
 - mounts `./config.json` into `/app/config.json` as read-only
+- mounts `./kb` into `/app/kb` as read-only so seed data changes are available in Docker
 - sets `SYSTEMIX_MCP_SERVER_CONFIG_PATH=/app/config.json`
 - adds `host.docker.internal` so the container can reach services running on your host machine if needed
 
@@ -155,6 +172,37 @@ The browser page is intended for manual smoke testing without writing code. It l
 This exercises the real MCP endpoint over HTTP from a browser.
 
 If you run the server inside Docker, the browser test page is still available at `http://localhost:8001/browser` on the host because compose publishes port `8001`.
+
+## Knowledge Base Seeding
+
+The app reads these newline-delimited JSON seed files on startup:
+
+- `kb/account_and_login.txt`
+- `kb/payments.txt`
+- `kb/shipping_and_orders.txt`
+- `kb/returns_and_refunds.txt`
+- `kb/product_usage.txt`
+
+Bootstrap behavior:
+
+- connects to the PostgreSQL server in `database.connection_string`
+- connects to `database.admin_database` first and creates the target database if it does not already exist
+- creates the `kb_documents` table and indexes when needed
+- reloads the managed KB seed files into PostgreSQL each time the app starts
+
+The shipped demo corpus includes:
+
+- `50` records in `account_and_login`
+- `50` records in `payments`
+- `50` records in `shipping_and_orders`
+- `50` records in `returns_and_refunds`
+- `200` records in `product_usage`
+
+To regenerate the demo KB files:
+
+```bash
+python3 scripts/generate_kb_demo_data.py
+```
 
 ## Unit Tests
 

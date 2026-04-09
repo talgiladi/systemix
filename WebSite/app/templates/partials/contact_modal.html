@@ -1,0 +1,30 @@
+<div class="modal-backdrop" data-contact-modal hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">Contact Systemix</p>
+                <h2 id="contact-modal-title">Tell us where automation is creating friction</h2>
+            </div>
+            <button class="icon-button" type="button" data-close-contact aria-label="Close contact form">×</button>
+        </div>
+
+        <form class="contact-form" data-contact-form novalidate>
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" maxlength="80" autocomplete="name" required>
+
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" maxlength="254" autocomplete="email" required>
+
+            <label for="company">Company <span>(optional)</span></label>
+            <input id="company" name="company" type="text" maxlength="120" autocomplete="organization">
+
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" maxlength="2000" required></textarea>
+
+            <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden-field" aria-hidden="true">
+
+            <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+            <button class="primary-button form-submit" type="submit">Send Inquiry</button>
+        </form>
+    </div>
+</div>

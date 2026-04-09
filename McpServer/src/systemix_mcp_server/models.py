@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -34,3 +36,14 @@ class SupportSettingsModel(BaseModel):
     default_queue: str = "general-support"
     default_response_sla_hours: int = 8
     issue_routes: dict[str, IssueRoute] = Field(default_factory=dict)
+
+
+class KnowledgeBaseDocument(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    doc_id: str
+    title: str
+    category: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    last_updated: date

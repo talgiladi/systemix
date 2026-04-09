@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <meta name="description" content="{{ page_description }}">
+    <meta name="theme-color" content="#07111f">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+</head>
+<body>
+    <div class="site-shell">
+        <div class="ambient ambient-one" aria-hidden="true"></div>
+        <div class="ambient ambient-two" aria-hidden="true"></div>
+        <div class="grid-overlay" aria-hidden="true"></div>
+
+        <header class="site-header">
+            <a class="brand" href="/">Systemix</a>
+            <nav class="site-nav" aria-label="Primary">
+                <a href="/">Home</a>
+                <a href="/use-cases">Use Cases</a>
+                <a href="/faq">FAQ</a>
+                <button class="nav-contact-button" type="button" data-open-contact>Contact</button>
+            </nav>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="site-footer">
+            <div>
+                <p class="footer-mark">Systemix</p>
+                <p>AI-powered business automation for security-conscious teams.</p>
+            </div>
+            <div class="footer-links">
+                <a href="/use-cases">Solutions</a>
+                <a href="/faq">Deployment FAQ</a>
+                <button type="button" class="footer-contact-button" data-open-contact>Start a Conversation</button>
+            </div>
+        </footer>
+
+        {% include "partials/contact_modal.html" %}
+        <button class="floating-contact-button" type="button" data-open-contact aria-label="Open contact form">
+            Contact
+        </button>
+    </div>
+
+    <script src="{{ url_for('static', path='js/main.js') }}" defer></script>
+</body>
+</html>

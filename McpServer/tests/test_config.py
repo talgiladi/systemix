@@ -28,6 +28,12 @@ def test_load_settings_supports_project_config(tmp_path: Path) -> None:
             "access_log": true,
             "log_request_bodies": true
           },
+          "database": {
+            "connection_string": "postgresql://systemix:systemix@localhost:5432/test_kb",
+            "admin_database": "postgres",
+            "kb_directory": "kb",
+            "seed_on_startup": true
+          },
           "accounts": {
             "default_tier": "gold",
             "records": [
@@ -68,6 +74,7 @@ def test_load_settings_supports_project_config(tmp_path: Path) -> None:
     assert settings.app.name == "Test Server"
     assert settings.server.port == 9100
     assert settings.logging.format == "json"
+    assert settings.database.connection_string.endswith("/test_kb")
     assert settings.accounts.records[0].user_id == "user-1"
     assert settings.support.issue_routes["login"].queue == "identity"
 

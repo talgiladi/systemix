@@ -46,12 +46,24 @@ class AccountSettings(BaseModel):
     records: list[AccountRecord] = Field(default_factory=list)
 
 
+class DatabaseSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connection_string: str = (
+        "postgresql://systemix:systemix@localhost:5432/systemix_kb"
+    )
+    admin_database: str = "postgres"
+    kb_directory: str = "kb"
+    seed_on_startup: bool = True
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     app: AppSettings = Field(default_factory=AppSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     accounts: AccountSettings = Field(default_factory=AccountSettings)
     support: SupportSettingsModel = Field(default_factory=SupportSettingsModel)
 

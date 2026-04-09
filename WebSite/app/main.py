@@ -81,4 +81,11 @@ async def log_requests(request: Request, call_next) -> Response:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host=settings.host, port=settings.port, reload=False)
+    uvicorn.run(
+        "app.main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=False,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

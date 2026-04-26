@@ -1,10 +1,7 @@
-const modal = document.querySelector("[data-contact-modal]");
-const openButtons = document.querySelectorAll("[data-open-contact]");
-const closeButton = document.querySelector("[data-close-contact]");
-const form = document.querySelector("[data-contact-form]");
-const feedback = document.querySelector("[data-form-feedback]");
+const forms = document.querySelectorAll("[data-contact-form]");
 
-const setFeedback = (message, state) => {
+const setFeedback = (form, message, state) => {
+    const feedback = form.querySelector("[data-form-feedback]");
     if (!feedback) {
         return;
     }
@@ -15,84 +12,44 @@ const setFeedback = (message, state) => {
     }
 };
 
-const openModal = () => {
-    if (!modal) {
-        return;
-    }
-    modal.hidden = false;
-    document.body.classList.add("modal-open");
-    const firstField = modal.querySelector("input, textarea");
-    if (firstField) {
-        firstField.focus();
-    }
-};
-
-const closeModal = () => {
-    if (!modal) {
-        return;
-    }
-    modal.hidden = true;
-    document.body.classList.remove("modal-open");
-};
-
-openButtons.forEach((button) => {
-    button.addEventListener("click", openModal);
-});
-
-if (closeButton) {
-    closeButton.addEventListener("click", closeModal);
-}
-
-if (modal) {
-    modal.addEventListener("click", (event) => {
-        if (event.target === modal) {
-            closeModal();
-        }
-    });
-}
-
-document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && modal && !modal.hidden) {
-        closeModal();
-    }
-});
-
-const validateForm = (formData) => {
+const validateForm = (form, formData) => {
     const name = formData.get("name")?.toString().trim() || "";
     const email = formData.get("email")?.toString().trim() || "";
     const message = formData.get("message")?.toString().trim() || "";
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (name.length < 2) {
-        return "Please enter your name.";
+        return form.dataset.validationName || "Please enter your name.";
     }
     if (!emailPattern.test(email)) {
-        return "Please enter a valid email address.";
+        return form.dataset.validationEmail || "Please enter a valid email address.";
     }
     if (message.length < 20) {
-        return "Please share a bit more detail so we can understand the workflow.";
+        return form.dataset.validationMessage || "Please share a bit more detail so we can understand the workflow.";
     }
     return "";
 };
 
-if (form) {
+forms.forEach((form) => {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
-        const validationError = validateForm(formData);
+        const validationError = validateForm(form, formData);
 
         if (validationError) {
-            setFeedback(validationError, "is-error");
+            setFeedback(form, validationError, "is-error");
             return;
         }
 
         const submitButton = form.querySelector(".form-submit");
+        const idleLabel = submitButton?.dataset.idleLabel || submitButton?.textContent || "Send Inquiry";
+        const loadingLabel = submitButton?.dataset.loadingLabel || "Sending...";
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = "Sending...";
+            submitButton.textContent = loadingLabel;
         }
 
-        setFeedback("Submitting your inquiry...", "");
+        setFeedback(form, form.dataset.statusSubmitting || "Submitting your inquiry...", "");
 
         try {
             const response = await fetch("/contact", {
@@ -108,19 +65,15 @@ if (form) {
                 throw new Error(payload.detail || "Something went wrong. Please try again.");
             }
 
-            setFeedback(payload.message, "is-success");
+            setFeedback(form, payload.message, "is-success");
             form.reset();
-            window.setTimeout(() => {
-                closeModal();
-                setFeedback("", "");
-            }, 1200);
         } catch (error) {
-            setFeedback(error.message || "Unable to submit the form right now.", "is-error");
+            setFeedback(form, error.message || form.dataset.errorGeneric || "Unable to submit the form right now.", "is-error");
         } finally {
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.textContent = "Send Inquiry";
+                submitButton.textContent = idleLabel;
             }
         }
     });
-}
+});

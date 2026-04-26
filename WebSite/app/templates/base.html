@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ t.html_lang }}" dir="{{ t.direction }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,19 +8,24 @@
     <meta name="theme-color" content="#07111f">
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
-<body>
+<body class="lang-{{ language }}">
     <div class="site-shell">
         <div class="ambient ambient-one" aria-hidden="true"></div>
         <div class="ambient ambient-two" aria-hidden="true"></div>
         <div class="grid-overlay" aria-hidden="true"></div>
 
         <header class="site-header">
-            <a class="brand" href="/">Systemix</a>
+            <a class="brand" href="{{ nav_paths.home }}">{{ t.brand_name }}</a>
             <nav class="site-nav" aria-label="Primary">
-                <a href="/">Home</a>
-                <a href="/use-cases">Use Cases</a>
-                <a href="/faq">FAQ</a>
-                <button class="nav-contact-button" type="button" data-open-contact>Contact</button>
+                <a href="{{ nav_paths.home }}">{{ t.nav.home }}</a>
+                <a href="{{ nav_paths.use_cases }}">{{ t.nav.use_cases }}</a>
+                <a href="{{ nav_paths.faq }}">{{ t.nav.faq }}</a>
+                <a class="nav-contact-button" href="{{ nav_paths.contact }}">{{ t.nav.contact }}</a>
+            </nav>
+            <nav class="language-switcher" aria-label="{{ t.language_switcher }}">
+                <a class="{% if language == 'en' %}is-active{% endif %}" href="{{ language_switch_urls.en }}">English</a>
+                <span>/</span>
+                <a class="{% if language == 'he' %}is-active{% endif %}" href="{{ language_switch_urls.he }}">עברית</a>
             </nav>
         </header>
 
@@ -30,20 +35,15 @@
 
         <footer class="site-footer">
             <div>
-                <p class="footer-mark">Systemix</p>
-                <p>AI-powered business automation for security-conscious teams.</p>
+                <p class="footer-mark">{{ t.brand_name }}</p>
+                <p>{{ t.footer.summary }}</p>
             </div>
             <div class="footer-links">
-                <a href="/use-cases">Solutions</a>
-                <a href="/faq">Deployment FAQ</a>
-                <button type="button" class="footer-contact-button" data-open-contact>Start a Conversation</button>
+                <a href="{{ nav_paths.use_cases }}">{{ t.footer.solutions }}</a>
+                <a href="{{ nav_paths.faq }}">{{ t.footer.faq }}</a>
+                <a class="footer-contact-button" href="{{ nav_paths.contact }}">{{ t.footer.contact_cta }}</a>
             </div>
         </footer>
-
-        {% include "partials/contact_modal.html" %}
-        <button class="floating-contact-button" type="button" data-open-contact aria-label="Open contact form">
-            Contact
-        </button>
     </div>
 
     <script src="/static/js/main.js" defer></script>

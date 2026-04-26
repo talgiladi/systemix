@@ -17,6 +17,8 @@ class Settings:
     request_log_enabled: bool = os.getenv("REQUEST_LOG_ENABLED", "true").lower() == "true"
     contact_rate_limit: int = int(os.getenv("CONTACT_RATE_LIMIT", "5"))
     contact_rate_window_seconds: int = int(os.getenv("CONTACT_RATE_WINDOW_SECONDS", "600"))
+    geo_lookup_url: str = os.getenv("GEO_LOOKUP_URL", "https://api.country.is")
+    geo_lookup_timeout_seconds: float = float(os.getenv("GEO_LOOKUP_TIMEOUT_SECONDS", "1.5"))
 
 
 settings = Settings()
